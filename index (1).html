@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ 世界盃 2026 冠軍競猜</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;min-height:100vh;padding:1rem;}
+  .container{max-width:720px;margin:0 auto;background:#fff;border-radius:16px;padding:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+  .hdr{padding-bottom:1rem;border-bottom:1px solid #eee;margin-bottom:1.25rem;}
+  .hdr h1{font-size:20px;font-weight:600;color:#111;}
+  .hdr-sub{display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;}
+  .hdr p{font-size:13px;color:#777;}
+  .sync-badge{font-size:11px;padding:2px 8px;border-radius:4px;background:#f0f0ec;color:#888;border:1px solid #e0e0da;}
+  .sync-badge.ok{background:#e1f5ee;color:#085041;border-color:#9fe1cb;}
+  .sync-badge.err{background:#fff0f0;color:#a32d2d;border-color:#f7c1c1;}
+  .vtabs{display:flex;gap:8px;margin-bottom:1.25rem;}
+  .vtab{padding:7px 18px;font-size:13px;border-radius:8px;cursor:pointer;border:1px solid #ddd;background:transparent;color:#777;transition:all 0.15s;font-family:inherit;}
+  .vtab.on{background:#f0f0ec;color:#111;font-weight:500;border-color:#ccc;}
+  .legend{display:flex;gap:16px;margin-bottom:10px;font-size:12px;color:#888;align-items:center;}
+  .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dot-active{background:#1d9e75;}
+  .dot-out{background:#e24b4a;}
+  .zone-in{background:#e1f5ee;border:1px solid #9fe1cb;border-radius:12px;padding:12px;margin-bottom:10px;}
+  .zone-out{background:#fcebeb;border:1px solid #f7c1c1;border-radius:12px;padding:12px;margin-bottom:1.5rem;transition:opacity 0.3s;}
+  .zone-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .zone-title-in{font-size:13px;font-weight:600;color:#085041;}
+  .zone-title-out{font-size:13px;font-weight:600;color:#a32d2d;}
+  .zone-count{font-size:11px;color:#888;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;}
+  .tcard{background:#fff;border:2px solid #e5e5e5;border-radius:12px;padding:9px 4px 8px;cursor:pointer;text-align:center;transition:all 0.15s;position:relative;}
+  .tcard:hover{border-color:#bbb;transform:translateY(-1px);}
+  .tcard.sel-in{border-color:#1d9e75;background:#e1f5ee;}
+  .tcard.sel-out{border-color:#e24b4a;background:#fff0f0;}
+  .tcard.eliminated{filter:grayscale(55%);opacity:0.5;}
+  .tcard.eliminated:hover{transform:none;border-color:#e5e5e5;}
+  .flag-wrap{width:42px;height:42px;border-radius:50%;overflow:hidden;margin:0 auto 6px;border:1px solid #e0e0e0;}
+  .flag-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .tnm{font-size:10px;color:#222;font-weight:500;line-height:1.3;}
+  .tcard.sel-in .tnm{color:#085041;}
+  .tcard.sel-out .tnm{color:#a32d2d;}
+  .sdot{width:7px;height:7px;border-radius:50%;position:absolute;top:5px;right:5px;}
+  .preview{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f5f5f0;border-radius:8px;margin-bottom:12px;}
+  .pflag{width:38px;height:38px;border-radius:50%;overflow:hidden;border:1px solid #ddd;flex-shrink:0;}
+  .pflag img{width:100%;height:100%;object-fit:cover;}
+  .pnm{font-size:14px;font-weight:600;color:#111;}
+  .phint{font-size:12px;margin-top:2px;}
+  .phint-in{color:#0f6e56;}
+  .phint-out{color:#a32d2d;}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  @media(max-width:480px){.frow{grid-template-columns:1fr;}}
+  label{font-size:13px;color:#666;display:block;margin-bottom:4px;}
+  input[type=text]{width:100%;padding:9px 12px;font-size:14px;border:1px solid #ddd;border-radius:8px;outline:none;font-family:inherit;transition:border 0.15s;}
+  input[type=text]:focus{border-color:#1d9e75;}
+  .sbtn{width:100%;padding:11px;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s;font-family:inherit;margin-top:4px;}
+  .sbtn-in{background:#1d9e75;}.sbtn-in:hover{background:#0f6e56;}
+  .sbtn-out{background:#e24b4a;}.sbtn-out:hover{background:#a32d2d;}
+  .sbtn:disabled{background:#e0e0e0;color:#aaa;cursor:not-allowed;}
+  .toast{padding:10px 20px;border-radius:8px;font-size:13px;text-align:center;margin-top:1rem;display:none;color:#fff;}
+  .toast.show{display:block;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:100;padding:1rem;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:2rem 1.5rem;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15);}
+  .mflag{width:68px;height:68px;border-radius:50%;overflow:hidden;margin:0 auto 10px;border:2px solid #eee;}
+  .mflag img{width:100%;height:100%;object-fit:cover;}
+  .micon{font-size:48px;margin-bottom:8px;line-height:1;}
+  .mtitle{font-size:19px;font-weight:700;margin-bottom:8px;color:#111;}
+  .msub{font-size:13px;color:#666;line-height:1.7;margin-bottom:1.5rem;white-space:pre-line;}
+  .mbtn{padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;color:#fff;font-family:inherit;}
+  .mbtn-in{background:#1d9e75;}.mbtn-out{background:#e24b4a;}
+  .srow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;}
+  .sbox{background:#f5f5f0;border-radius:8px;padding:14px;text-align:center;}
+  .sbox .sn{font-size:24px;font-weight:700;color:#111;}
+  .sbox .sl{font-size:12px;color:#888;margin-top:3px;}
+  .rrow{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fff;border:1px solid #eee;border-radius:8px;margin-bottom:7px;}
+  .rrow.top{border-color:#1d9e75;}
+  .rnk{font-size:15px;font-weight:600;min-width:22px;color:#aaa;}
+  .rnk.g{color:#c89010;}
+  .rflag{width:32px;height:32px;border-radius:50%;overflow:hidden;border:1px solid #eee;flex-shrink:0;}
+  .rflag img{width:100%;height:100%;object-fit:cover;}
+  .rinfo{flex:1;}
+  .rnm{font-size:13px;font-weight:600;color:#111;}
+  .rsub{font-size:11px;color:#888;}
+  .rbar{width:90px;}
+  .rbg{height:5px;background:#eee;border-radius:3px;overflow:hidden;}
+  .rfg{height:100%;background:#1d9e75;border-radius:3px;}
+  .rpct{font-size:12px;color:#0f6e56;font-weight:600;text-align:right;margin-top:3px;}
+  .litem{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #eee;border-radius:8px;margin-bottom:7px;}
+  .lflag{width:30px;height:30px;border-radius:50%;overflow:hidden;border:1px solid #eee;flex-shrink:0;}
+  .lflag img{width:100%;height:100%;object-fit:cover;}
+  .linfo{flex:1;}
+  .lnm{font-size:13px;font-weight:600;color:#111;}
+  .lreason{font-size:11px;color:#888;}
+  .ltime{font-size:11px;color:#aaa;white-space:nowrap;}
+  .empty{font-size:13px;color:#aaa;padding:16px 0;text-align:center;}
+  .divider{height:1px;background:#eee;margin:1.25rem 0;}
+  .sec-title{font-size:15px;font-weight:600;color:#111;margin-bottom:12px;}
+  .loading-msg{text-align:center;padding:16px;color:#aaa;font-size:13px;}
+  .elim-badge{font-size:10px;background:#fff0f0;color:#a32d2d;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid #ddd;border-top-color:#888;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:4px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hdr">
+    <h1>⚽ 世界盃 2026 冠軍競猜</h1>
+    <div class="hdr-sub">
+      <p>選擇你心目中的冠軍，每人限投一票</p>
+      <span class="sync-badge" id="sync-badge"><span class="spinner"></span>資料載入中</span>
+    </div>
+  </div>
+
+  <div class="vtabs">
+    <button class="vtab on" id="btn-v" onclick="sv('vote')">🗳️ 投票</button>
+    <button class="vtab" id="btn-r" onclick="sv('results')">📊 目前結果</button>
+  </div>
+
+  <div id="v-vote">
+    <div class="legend">
+      <div style="display:flex;align-items:center;gap:5px;"><div class="leg-dot dot-active"></div>仍在賽中</div>
+      <div style="display:flex;align-items:center;gap:5px;"><div class="leg-dot dot-out"></div>已淘汰</div>
+    </div>
+
+    <div class="zone-in">
+      <div class="zone-hdr">
+        <span class="zone-title-in">🏆 仍在賽中 — 我會拿冠軍！</span>
+        <span class="zone-count" id="count-in">—</span>
+      </div>
+      <div class="grid" id="grid-active"><div class="loading-msg">載入賽況資料中...</div></div>
+    </div>
+
+    <div class="zone-out" id="zone-out-wrapper">
+      <div class="zone-hdr">
+        <span class="zone-title-out">😢 已淘汰 — 四年後再來</span>
+        <span class="zone-count" id="count-out">—</span>
+      </div>
+      <div class="grid" id="grid-eliminated"><div class="loading-msg">載入中...</div></div>
+    </div>
+
+    <div id="preview" class="preview" style="display:none">
+      <div class="pflag"><img id="pre-img" src="" alt=""></div>
+      <div>
+        <div class="pnm" id="pre-nm"></div>
+        <div class="phint" id="pre-hint"></div>
+      </div>
+    </div>
+    <div class="frow">
+      <div><label>你的名字</label><input type="text" id="inp-name" placeholder="請輸入姓名"></div>
+      <div><label>理由（選填）</label><input type="text" id="inp-reason" placeholder="為什麼選這隊？"></div>
+    </div>
+    <button class="sbtn" id="sub-btn" onclick="doVote()" disabled>請先選擇球隊</button>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <div id="v-results" style="display:none">
+    <div style="text-align:right;margin-bottom:12px;">
+      <button onclick="loadVotes(true)" style="font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:6px;background:transparent;cursor:pointer;font-family:inherit;color:#666;">🔄 重新整理</button>
+    </div>
+    <div class="srow">
+      <div class="sbox"><div class="sn" id="s-total">0</div><div class="sl">總投票數</div></div>
+      <div class="sbox"><div class="sn" id="s-teams">0</div><div class="sl">獲票球隊</div></div>
+    </div>
+    <div class="sec-title">🏆 冠軍熱門排行</div>
+    <div id="rank-list"><div class="empty">還沒有人投票</div></div>
+    <div class="divider"></div>
+    <div class="sec-title">🕐 最新投票紀錄</div>
+    <div id="log-list"><div class="empty">還沒有投票紀錄</div></div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="mflag"><img id="mflag-img" src="" alt=""></div>
+    <div class="micon" id="micon"></div>
+    <div class="mtitle" id="mtitle"></div>
+    <div class="msub" id="msub"></div>
+    <button class="mbtn" id="mbtn" onclick="closeModal()"></button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ⚙️ 設定：把這裡換成你的 Google Apps Script Web App URL
+// ============================================================
+const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+// ============================================================
+
+const FLAG = cc => `https://flagcdn.com/w80/${cc}.png`;
+
+// 官方 48 支球隊（12 組 × 4 隊）
+const OFFICIAL_48 = [
+  // A 組
+  {id:'mex',nm:'墨西哥',      cc:'mx', group:'A'},
+  {id:'zaf',nm:'南非',        cc:'za', group:'A'},
+  {id:'kor',nm:'南韓',        cc:'kr', group:'A'},
+  {id:'cze',nm:'捷克',        cc:'cz', group:'A'},
+  // B 組
+  {id:'can',nm:'加拿大',      cc:'ca', group:'B'},
+  {id:'bih',nm:'波士尼亞',    cc:'ba', group:'B'},
+  {id:'qat',nm:'卡達',        cc:'qa', group:'B'},
+  {id:'sui',nm:'瑞士',        cc:'ch', group:'B'},
+  // C 組
+  {id:'bra',nm:'巴西',        cc:'br', group:'C'},
+  {id:'mar',nm:'摩洛哥',      cc:'ma', group:'C'},
+  {id:'hai',nm:'海地',        cc:'ht', group:'C'},
+  {id:'sco',nm:'蘇格蘭',      cc:'gb-sct', group:'C'},
+  // D 組
+  {id:'usa',nm:'美國',        cc:'us', group:'D'},
+  {id:'par',nm:'巴拉圭',      cc:'py', group:'D'},
+  {id:'aus',nm:'澳洲',        cc:'au', group:'D'},
+  {id:'tur',nm:'土耳其',      cc:'tr', group:'D'},
+  // E 組
+  {id:'ger',nm:'德國',        cc:'de', group:'E'},
+  {id:'cur',nm:'庫拉索',      cc:'cw', group:'E'},
+  {id:'civ',nm:'象牙海岸',    cc:'ci', group:'E'},
+  {id:'ecu',nm:'厄瓜多',      cc:'ec', group:'E'},
+  // F 組
+  {id:'ned',nm:'荷蘭',        cc:'nl', group:'F'},
+  {id:'jpn',nm:'日本',        cc:'jp', group:'F'},
+  {id:'swe',nm:'瑞典',        cc:'se', group:'F'},
+  {id:'tun',nm:'突尼西亞',    cc:'tn', group:'F'},
+  // G 組
+  {id:'bel',nm:'比利時',      cc:'be', group:'G'},
+  {id:'egy',nm:'埃及',        cc:'eg', group:'G'},
+  {id:'irn',nm:'伊朗',        cc:'ir', group:'G'},
+  {id:'nzl',nm:'紐西蘭',      cc:'nz', group:'G'},
+  // H 組
+  {id:'esp',nm:'西班牙',      cc:'es', group:'H'},
+  {id:'cpv',nm:'佛得角',      cc:'cv', group:'H'},
+  {id:'sau',nm:'沙烏地',      cc:'sa', group:'H'},
+  {id:'uru',nm:'烏拉圭',      cc:'uy', group:'H'},
+  // I 組
+  {id:'fra',nm:'法國',        cc:'fr', group:'I'},
+  {id:'sen',nm:'塞內加爾',    cc:'sn', group:'I'},
+  {id:'irq',nm:'伊拉克',      cc:'iq', group:'I'},
+  {id:'nor',nm:'挪威',        cc:'no', group:'I'},
+  // J 組
+  {id:'arg',nm:'阿根廷',      cc:'ar', group:'J'},
+  {id:'dza',nm:'阿爾及利亞',  cc:'dz', group:'J'},
+  {id:'aut',nm:'奧地利',      cc:'at', group:'J'},
+  {id:'jor',nm:'約旦',        cc:'jo', group:'J'},
+  // K 組
+  {id:'por',nm:'葡萄牙',      cc:'pt', group:'K'},
+  {id:'cod',nm:'剛果',        cc:'cd', group:'K'},
+  {id:'uzb',nm:'烏茲別克',    cc:'uz', group:'K'},
+  {id:'col',nm:'哥倫比亞',    cc:'co', group:'K'},
+  // L 組
+  {id:'eng',nm:'英格蘭',      cc:'gb-eng', group:'L'},
+  {id:'cro',nm:'克羅埃西亞',  cc:'hr', group:'L'},
+  {id:'gha',nm:'迦納',        cc:'gh', group:'L'},
+  {id:'pan',nm:'巴拿馬',      cc:'pa', group:'L'},
+];
+
+// openfootball 英文名稱對應
+const ENG_TO_ID = {
+  'Mexico':'mex','South Africa':'zaf','South Korea':'kor','Czechia':'cze',
+  'Canada':'can','Bosnia and Herzegovina':'bih','Qatar':'qat','Switzerland':'sui',
+  'Brazil':'bra','Morocco':'mar','Haiti':'hai','Scotland':'sco',
+  'United States':'usa','Paraguay':'par','Australia':'aus','Turkey':'tur',
+  'Germany':'ger','Curaçao':'cur','Curacao':'cur',"Côte d'Ivoire":'civ','Ivory Coast':'civ','Ecuador':'ecu',
+  'Netherlands':'ned','Japan':'jpn','Sweden':'swe','Tunisia':'tun',
+  'Belgium':'bel','Egypt':'egy','Iran':'irn','New Zealand':'nzl',
+  'Spain':'esp','Cape Verde':'cpv','Saudi Arabia':'sau','Uruguay':'uru',
+  'France':'fra','Senegal':'sen','Iraq':'irq','Norway':'nor',
+  'Argentina':'arg','Algeria':'dza','Austria':'aut','Jordan':'jor',
+  'Portugal':'por','DR Congo':'cod','Congo DR':'cod','Uzbekistan':'uzb','Colombia':'col',
+  'England':'eng','Croatia':'cro','Ghana':'gha','Panama':'pan',
+};
+
+let teams = OFFICIAL_48.map(t => ({...t, out: false}));
+let picked = null;
+let serverVotes = [];
+
+// ── Google Sheets 連線 ──────────────────────────────────────
+async function loadVotes(showLoading) {
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=getVotes');
+    const data = await res.json();
+    serverVotes = Array.isArray(data) ? data : [];
+    if (showLoading) renderResults();
+  } catch(e) { console.warn('無法載入投票資料', e); }
+}
+
+async function submitVote(payload) {
+  if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    // 尚未設定 Script URL，使用 localStorage 暫存
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem('wc26_local') || '[]'); } catch(e){}
+    local.push(payload);
+    localStorage.setItem('wc26_local', JSON.stringify(local));
+    serverVotes = local;
+    return true;
+  }
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=addVote', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch(e) {
+    console.error('寫入失敗', e);
+    return false;
+  }
+}
+
+function alreadyVoted(name) {
+  // 檢查 server votes + localStorage
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem('wc26_local') || '[]'); } catch(e){}
+  const all = [...serverVotes, ...local];
+  return all.find(v => v.Name === name || v.name === name);
+}
+
+// ── 賽況資料（openfootball）──────────────────────────────────
+async function fetchStandings() {
+  const badge = document.getElementById('sync-badge');
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const now = new Date();
+    const played = {};
+    const groupTeams = {};
+
+    (data.matches || []).forEach(m => {
+      if (!m.group) return;
+      if (!groupTeams[m.group]) groupTeams[m.group] = new Set();
+      groupTeams[m.group].add(m.team1);
+      groupTeams[m.group].add(m.team2);
+    });
+
+    (data.matches || []).forEach(m => {
+      if (new Date(m.date) > now) return;
+      const ft = m.score && m.score.ft;
+      if (!ft) return;
+      [m.team1, m.team2].forEach(t => {
+        if (!played[t]) played[t] = {p:0, pts:0};
+        played[t].p++;
+      });
+      const [g1, g2] = ft;
+      if      (g1 > g2) { played[m.team1].pts += 3; }
+      else if (g2 > g1) { played[m.team2].pts += 3; }
+      else              { played[m.team1].pts += 1; played[m.team2].pts += 1; }
+    });
+
+    const eliminated = new Set();
+    Object.entries(groupTeams).forEach(([, teamSet]) => {
+      const arr = Array.from(teamSet);
+      if (!arr.every(t => played[t] && played[t].p >= 3)) return;
+      arr.sort((a,b) => (played[b]?.pts||0) - (played[a]?.pts||0))
+         .slice(2).forEach(t => eliminated.add(t));
+    });
+
+    teams = OFFICIAL_48.map(t => {
+      const engName = Object.entries(ENG_TO_ID).find(([,id]) => id === t.id)?.[0];
+      return {...t, out: engName ? eliminated.has(engName) : false};
+    });
+
+    const lastPlayed = (data.matches||[])
+      .filter(m => new Date(m.date) <= now && m.score?.ft)
+      .sort((a,b) => new Date(b.date)-new Date(a.date))[0];
+
+    if (lastPlayed) {
+      const d = new Date(lastPlayed.date);
+      badge.textContent = `✓ ${d.getMonth()+1}/${d.getDate()} 更新`;
+    } else {
+      badge.textContent = '✓ 賽事進行中';
+    }
+    badge.className = 'sync-badge ok';
+  } catch(e) {
+    teams = OFFICIAL_48.map(t => ({...t, out: false}));
+    badge.textContent = '⚠ 使用離線資料';
+    badge.className = 'sync-badge err';
+  }
+  renderTeams();
+}
+
+// ── 渲染球隊格 ───────────────────────────────────────────────
+function renderTeams() {
+  const active = teams.filter(t => !t.out);
+  const elim   = teams.filter(t => t.out);
+  document.getElementById('count-in').textContent  = active.length + ' 隊';
+  document.getElementById('count-out').textContent = elim.length  + ' 隊';
+
+  const card = t => {
+    const sel = picked === t.id;
+    let cls = 'tcard' + (t.out ? ' eliminated' : '') + (sel ? (t.out ? ' sel-out' : ' sel-in') : '');
+    return `<div class="${cls}" onclick="pick('${t.id}')">
+      <div class="sdot" style="background:${t.out?'#e24b4a':'#1d9e75'}"></div>
+      <div class="flag-wrap"><img src="${FLAG(t.cc)}" alt="${t.nm}" loading="lazy"></div>
+      <div class="tnm">${t.nm}</div>
+    </div>`;
+  };
+
+  document.getElementById('grid-active').innerHTML =
+    active.length ? active.map(card).join('') :
+    '<div style="font-size:12px;color:#0f6e56;padding:6px 0;">小組賽進行中，持續更新</div>';
+
+  const ow = document.getElementById('zone-out-wrapper');
+  if (elim.length === 0) {
+    document.getElementById('grid-eliminated').innerHTML =
+      '<div style="font-size:12px;color:#a32d2d;padding:6px 0;">小組賽進行中，尚無淘汰隊伍</div>';
+    ow.style.opacity = '0.55';
+  } else {
+    document.getElementById('grid-eliminated').innerHTML = elim.map(card).join('');
+    ow.style.opacity = '1';
+  }
+}
+
+// ── 選隊 ─────────────────────────────────────────────────────
+function pick(id) {
+  picked = id;
+  const t = teams.find(x => x.id === id);
+  document.getElementById('preview').style.display = 'flex';
+  document.getElementById('pre-img').src = FLAG(t.cc);
+  document.getElementById('pre-img').alt = t.nm;
+  document.getElementById('pre-nm').textContent = t.nm;
+  const hint = document.getElementById('pre-hint');
+  const btn  = document.getElementById('sub-btn');
+  if (t.out) {
+    hint.textContent = '⚠️ 這支隊已被淘汰，你確定要力挺嗎？';
+    hint.className = 'phint phint-out';
+    btn.className = 'sbtn sbtn-out';
+  } else {
+    hint.textContent = '✅ 仍在賽中，好眼光！';
+    hint.className = 'phint phint-in';
+    btn.className = 'sbtn sbtn-in';
+  }
+  btn.disabled = false;
+  btn.textContent = `為 ${t.nm} 投票`;
+  renderTeams();
+}
+
+// ── 投票 ─────────────────────────────────────────────────────
+async function doVote() {
+  const name   = document.getElementById('inp-name').value.trim();
+  const reason = document.getElementById('inp-reason').value.trim();
+  if (!name) { alert('請填寫名字'); return; }
+
+  const dup = alreadyVoted(name);
+  if (dup) {
+    const dupTeamId = dup.Team || dup.team;
+    const pt = teams.find(t => t.id === dupTeamId);
+    alert(`${name} 已投票給 ${pt ? pt.nm : dupTeamId}，每人限投一票。`);
+    return;
+  }
+
+  const t = teams.find(x => x.id === picked);
+  const btn = document.getElementById('sub-btn');
+  btn.disabled = true;
+  btn.textContent = '送出中...';
+
+  const ok = await submitVote({
+    name, team: picked, teamName: t.nm,
+    reason, isEliminated: t.out,
+    timestamp: new Date().toISOString()
+  });
+
+  if (ok) {
+    await loadVotes(false);
+    document.getElementById('inp-name').value   = '';
+    document.getElementById('inp-reason').value = '';
+    picked = null;
+    document.getElementById('preview').style.display = 'none';
+    btn.textContent = '請先選擇球隊';
+    btn.className   = 'sbtn';
+    renderTeams();
+    showModal(t);
+  } else {
+    alert('送出失敗，請稍後再試');
+    btn.disabled = false;
+    btn.textContent = `為 ${t.nm} 投票`;
+  }
+}
+
+// ── 彈窗 ─────────────────────────────────────────────────────
+function showModal(t) {
+  const out_msgs = ['義氣挺到底，佩服你！','雖敗猶榮，感謝精彩表現！','這次旅途到這裡結束了...'];
+  const in_msgs  = ['冠軍夢繼續燃燒！','仍在征途上，繼續加油！','晉級了！一路走到最後！'];
+  document.getElementById('mflag-img').src  = FLAG(t.cc);
+  document.getElementById('micon').textContent  = t.out ? '😢' : '🏆';
+  document.getElementById('mtitle').textContent = t.out ? '四年後再來！' : '我會拿冠軍！';
+  document.getElementById('msub').textContent   = t.out
+    ? `${t.nm} 已被淘汰出局。\n${out_msgs[Math.floor(Math.random()*out_msgs.length)]}`
+    : `${t.nm} 仍在征戰中！\n${in_msgs[Math.floor(Math.random()*in_msgs.length)]}`;
+  const mb = document.getElementById('mbtn');
+  mb.textContent = t.out ? '沒關係，我挺到底！' : '加油！一定贏！';
+  mb.className   = 'mbtn ' + (t.out ? 'mbtn-out' : 'mbtn-in');
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+// ── 結果頁 ───────────────────────────────────────────────────
+function renderResults() {
+  let local = [];
+  try { local = JSON.parse(localStorage.getItem('wc26_local') || '[]'); } catch(e){}
+  const all = [...serverVotes, ...local];
+
+  const counts = {};
+  teams.forEach(t => { counts[t.id] = 0; });
+  all.forEach(v => {
+    const id = v.Team || v.team;
+    if (id in counts) counts[id]++;
+  });
+  const total = all.length;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-teams').textContent = Object.values(counts).filter(n=>n>0).length;
+
+  const sorted = teams.map(t => ({...t, v: counts[t.id]||0}))
+    .filter(t => t.v > 0).sort((a,b) => b.v - a.v);
+
+  document.getElementById('rank-list').innerHTML = sorted.length
+    ? sorted.map((t,i) => {
+        const pct = total ? Math.round(t.v/total*100) : 0;
+        return `<div class="rrow${i===0?' top':''}">
+          <div class="rnk${i===0?' g':''}">${i+1}</div>
+          <div class="rflag"><img src="${FLAG(t.cc)}" alt="${t.nm}"></div>
+          <div class="rinfo">
+            <div class="rnm">${t.nm}${t.out?'<span class="elim-badge">已淘汰</span>':''}</div>
+            <div class="rsub">${t.v} 票</div>
+          </div>
+          <div class="rbar"><div class="rbg"><div class="rfg" style="width:${pct}%"></div></div>
+          <div class="rpct">${pct}%</div></div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">還沒有人投票</div>';
+
+  const allVotes = [...all].reverse().slice(0, 10);
+  document.getElementById('log-list').innerHTML = allVotes.length
+    ? allVotes.map(v => {
+        const id = v.Team || v.team;
+        const nm = v.TeamName || v.teamName || id;
+        const t  = teams.find(x => x.id === id);
+        const ts = v.Timestamp || v.timestamp || '';
+        const d  = ts ? new Date(ts) : new Date();
+        const label = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const isOut = v.IsEliminated === 'TRUE' || v.isEliminated === true || v.out === true;
+        const reason = v.Reason || v.reason || '';
+        return `<div class="litem">
+          <div class="lflag"><img src="${FLAG(t?t.cc:'un')}" alt="${nm}"></div>
+          <div class="linfo">
+            <div class="lnm">${v.Name||v.name} ${isOut?'😢':'🏆'}</div>
+            ${reason?`<div class="lreason">「${reason}」</div>`:''}
+          </div>
+          <div class="ltime">${label}</div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">還沒有投票紀錄</div>';
+}
+
+// ── 切換頁籤 ─────────────────────────────────────────────────
+function sv(view) {
+  document.getElementById('v-vote').style.display    = view==='vote'?'block':'none';
+  document.getElementById('v-results').style.display = view==='results'?'block':'none';
+  document.getElementById('btn-v').className = 'vtab'+(view==='vote'?' on':'');
+  document.getElementById('btn-r').className = 'vtab'+(view==='results'?' on':'');
+  if (view === 'results') renderResults();
+}
+
+// ── 初始化 ───────────────────────────────────────────────────
+fetchStandings();
+loadVotes(false);
+</script>
+</body>
+</html>
